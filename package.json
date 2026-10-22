@@ -1,0 +1,15 @@
+{
+  "name": "ordinals-studio",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Deterministic Bitcoin generative art studio with autonomous HTML inscription export",
+  "scripts": {
+    "build": "python3 scripts/build-export.py",
+    "test": "node tests/geometry.cjs && node tests/runtime.cjs",
+    "test:browser": "node tests/ordinals.cjs"
+  },
+  "devDependencies": {
+    "jsdom": "30.1.3",
+    "playwright": "1.62.1"
+  }
+}

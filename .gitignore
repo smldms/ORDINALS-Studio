@@ -1,0 +1,9 @@
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+.openai/
+.env
+.env.*
+node_modules/
+test-results/

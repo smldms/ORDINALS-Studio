@@ -1,0 +1,10 @@
+/* Fonts are local, precompiled outline paths, not browser SVG text. */
+let typeLimited=false;
+const FONT_OPTIONS=[['mono','PLOTR Monoligne'],['archivo','Archivo Black'],['bebas','Bebas Neue'],['roboto','Roboto'],['grotesk','Space Grotesk']];
+const monoGlyphCache=new Map();
+function typeGlyph(family,ch){if(family==='mono'||!VECTOR_FONTS[family]){if(!monoGlyphCache.has(ch))monoGlyphCache.set(ch,{a:.8,p:glyph(ch).map(line=>line.map(([x,y])=>[x*.8,y]))});return monoGlyphCache.get(ch)}const data=VECTOR_FONTS[family].glyphs;return data[ch]||data[ch.normalize('NFD').replace(/[\u0300-\u036f]/g,'')]||data['?']}
+function fontKern(family,a,b){return VECTOR_FONTS[family]?.kern[a+b]||0}
+function layoutLine(line,family,scaleX,tracking){const chars=Array.from(line),items=[];let x=0;for(let i=0;i<chars.length;i++){const ch=chars[i];if(i)x+=fontKern(family,chars[i-1],ch)*scaleX;const g=typeGlyph(family,ch);items.push({x,glyph:g});x+=g.a*scaleX+tracking}return {items,width:Math.max(0,x-(chars.length?tracking:0))}}
+function fontControl(id,value){return `<label>Typographie<select id="${id}" aria-label="Typographie">${FONT_OPTIONS.map(([key,name])=>`<option value="${key}" ${key===value?'selected':''}>${name}</option>`).join('')}</select></label><div class="font-specimen" id="${id}Specimen" aria-hidden="true">Aa Bb 012</div><p class="font-note">Contours intégrés · aucune police externe à l’export</p>`}
+function updateFontSpecimen(id,family){const el=$(id+'Specimen');if(!el)return;el.style.fontFamily=family==='mono'?'monospace':`"Plotr ${family}"`;el.textContent=family==='mono'?'PLOTR / 012':'Aa Bb 012';el.style.fontVariationSettings=family==='grotesk'?'"wght" 500':'"wght" 400'}
+function updateTypographyStatus(){if(s.engine!=='type'||!$('typeNotice'))return;$('typeNotice').textContent=typeLimited?'Composition très dense : limite de 18 000 caractères atteinte. Augmentez le corps ou l’approche pour couvrir toute la largeur.':s.params.layout==='repeat'?'Entrée = une nouvelle ligne de texte ; les lignes saisies alternent dans le motif.':'Entrée = retour à la ligne. Les minuscules et accents sont conservés avec les nouvelles polices.'}
