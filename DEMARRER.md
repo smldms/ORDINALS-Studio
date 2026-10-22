@@ -7,4 +7,8 @@
 5. Charger un bloc réel ou Genesis, puis cliquer sur Exporter HTML.
 6. Prévisualiser le HTML sur un serveur ord compatible avant inscription.
 
+Le HTML se connecte seul à ordinals.com dès son ouverture en local ou sur un site web, puis vérifie le nouveau bloc toutes les 30 secondes. Sur Ordinals, il privilégie les endpoints récursifs de la même origine. Fermer le studio n’interrompt pas l’œuvre.
+
+Après une mise à jour du studio, réexporter les œuvres : un ancien fichier HTML conserve son ancien code.
+
 Le HTML est autonome ; aucune autre ressource du studio ne doit être inscrite. PLOTR Studio est un projet distinct.

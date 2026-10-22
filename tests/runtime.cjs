@@ -1,12 +1,12 @@
 const {JSDOM,VirtualConsole}=require('jsdom');
 const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),vm=require('node:vm');
 const root=path.resolve(__dirname,'../dist');
-function dom(html,fetcher=async()=>{throw Error('offline')}){const errors=[];const vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e.message));const d=new JSDOM(html,{url:'https://ord.test/',runScripts:'dangerously',virtualConsole:vc,beforeParse(w){w.structuredClone=structuredClone;w.requestAnimationFrame=()=>1;w.cancelAnimationFrame=()=>{};w.fetch=fetcher;w.AbortSignal=AbortSignal;w.setInterval=()=>1;w.clearInterval=()=>{};w.setTimeout=()=>1;w.clearTimeout=()=>{}}});return {d,w:d.window,errors,run:code=>vm.runInContext(code,d.getInternalVMContext())}}
+function dom(html,fetcher=async()=>{throw Error('offline')},url='https://ord.test/'){const errors=[];const vc=new VirtualConsole();vc.on('jsdomError',e=>errors.push(e.message));const d=new JSDOM(html,{url,runScripts:'dangerously',virtualConsole:vc,beforeParse(w){w.structuredClone=structuredClone;w.requestAnimationFrame=()=>1;w.cancelAnimationFrame=()=>{};w.fetch=fetcher;w.AbortSignal=AbortSignal;w.setInterval=(fn,ms)=>{w.__poll=fn;w.__pollMs=ms;return 1};w.clearInterval=()=>{};w.setTimeout=()=>1;w.clearTimeout=()=>{}}});return {d,w:d.window,errors,run:code=>vm.runInContext(code,d.getInternalVMContext())}}
 const html=fs.readFileSync(path.join(root,'index.html'),'utf8').replace(/<script src="([^"]+)"><\/script>/g,(_,file)=>'<script>'+fs.readFileSync(path.join(root,file),'utf8').replace(/<\/script/gi,'<\\/script')+'</script>');
 (async()=>{const studio=dom(html),{w,run}=studio;assert.deepEqual(studio.errors,[]);assert(w.document.querySelector('#art path'));
 for(const engine of ['flow','cell','type','op','super','iso']){
  w.document.querySelector(`[data-engine="${engine}"]`).click();assert.equal(run('s.engine'),engine);
- const initial=run('JSON.stringify(s)');const svg=run('artworkSVG()');assert.equal(run('artworkSVG()'),svg);assert.equal(run('JSON.stringify(s)'),initial);
+ const initial=run('JSON.stringify(s)');const svg=run('artworkSVG()');run("currentBlock={...GENESIS,height:1,hash:'a'.repeat(64)}");assert.notEqual(run('artworkSVG()'),svg,engine+' must change geometry at a new block');run('currentBlock={...GENESIS}');assert.equal(run('artworkSVG()'),svg);assert.equal(run('JSON.stringify(s)'),initial);
  run(`s.bitcoin.rules[s.engine]={};for(const [key,label,min,max] of ruleSpecs(s))s.bitcoin.rules[s.engine][key]={enabled:true,min,max}`);
  assert(run(`Array.from({length:20},(_,i)=>effectiveState(s,{...GENESIS,hash:i.toString(16).padStart(64,'0')})).every(state=>ruleSpecs(s).every(([key,label,min,max])=>state.params[key]>=min&&state.params[key]<=max))`));
  const output=run('exportHTML()');assert(!/<script[^>]+src=|<link[^>]+href=/.test(output));const art=dom(output);assert.deepEqual(art.errors,[]);assert.equal(art.run('artworkSVG()'),run('artworkSVG()'));
@@ -15,14 +15,29 @@ for(const engine of ['flow','cell','type','op','super','iso']){
 w.document.querySelector('[data-engine="flow"]').click();w.document.querySelector('[data-tab="bitcoin"]').click();w.document.querySelector('#bitcoinPoster').click();
 for(const family of ['mono','archivo','bebas','roboto','grotesk']){run(`s.poster.blocks[0].font='${family}';s.poster.blocks[0].text='BLOCK {height} / {transactions} / {total_fee}';`);const a=dom(run('exportHTML()'));assert.deepEqual(a.errors,[]);assert.equal(a.run('artworkSVG()'),run('artworkSVG()'));a.w.close()}
 run(`s.poster.blocks[0].text='</script><img src=x> {height}';`);const output=run('exportHTML()');const requests=[];let block={height:1,hash:'a'.repeat(64),timestamp:1231469665,transaction_count:1,total_fee:0};let offline=false;
-const art=dom(output,async url=>{requests.push(url);if(offline)throw Error('offline');return {ok:true,json:async()=>url==='/r/blockhash'?block.hash:block}});
+const art=dom(output,async url=>{requests.push(url);if(offline)throw Error('offline');return {ok:true,json:async()=>url==='https://ordinals.com/r/blockheight'?block.height:block}});
 await new Promise(r=>setImmediate(r));assert.equal(art.run('currentBlock.height'),1);assert.equal(art.w.document.querySelectorAll('img').length,0);const before=art.w.document.getElementById('work').innerHTML;
-block={...block,height:2,hash:'b'.repeat(64)};await art.run('refresh()');assert.equal(art.run('currentBlock.height'),2);assert.notEqual(art.w.document.getElementById('work').innerHTML,before);
+block={...block,height:2,hash:'b'.repeat(64)};assert.equal(art.w.__pollMs,30000);await art.w.__poll();assert.equal(art.run('currentBlock.height'),2);assert.notEqual(art.w.document.getElementById('work').innerHTML,before);
 block={...block,hash:'c'.repeat(64)};await art.run('refresh()');assert.equal(art.run('currentBlock.hash'),block.hash);
-offline=true;const retained=art.w.document.getElementById('work').innerHTML;await art.run('refresh()');assert.equal(art.w.document.getElementById('work').innerHTML,retained);assert(art.w.document.getElementById('connection').textContent.includes('indisponibles'));assert(requests.every(u=>u==='/r/blockhash'||u.startsWith('/r/blockinfo/')));assert.deepEqual(art.errors,[]);
+offline=true;const retained=art.w.document.getElementById('work').innerHTML;await art.run('refresh()');assert.equal(art.w.document.getElementById('work').innerHTML,retained);assert(art.w.document.getElementById('connection').textContent.includes('indisponible'));assert(requests.every(u=>u==='https://ordinals.com/r/blockheight'||u.startsWith('https://ordinals.com/r/blockinfo/')));assert.deepEqual(art.errors,[]);
 assert.equal(run(`resolveText('{total_fee} {transactions}',{total_fee:0})`),'0 N/A');assert.equal(run(`resolveText('{date} {time}',GENESIS)`),'2009-01-03 18:15:05 UTC');
 run('currentBlock={height:5,simulated:true}');assert.throws(()=>run('exportHTML()'),/bloc réel/);
 assert.throws(()=>run('validateBlock({height:0,hash:"bad",timestamp:1})'));
 run('currentBlock={...GENESIS};s.bitcoin.rules.flow={density:{enabled:true,min:100,max:20}}');assert.throws(()=>run('exportHTML()'),/Limites invalides/);
+
+for(const url of ['file:///tmp/art.html','http://localhost:8080/art.html','https://example.com/art.html','https://ordinals.com/content/'+'d'.repeat(64)+'i0','https://gateway.test/content/'+'d'.repeat(64)+'i0']){
+ const calls=[];const sameOrigin=url.startsWith('https://ordinals.com/')||url.startsWith('https://gateway.test/');
+ const a=dom(output,async endpoint=>{calls.push(endpoint);return {ok:true,json:async()=>endpoint.endsWith('/r/blockheight')?block.height:block}},url);
+ await new Promise(r=>setImmediate(r));assert.equal(a.run('currentBlock.hash'),block.hash,url);
+ assert.equal(calls[0],(sameOrigin?'':'https://ordinals.com')+'/r/blockheight',url);assert.deepEqual(a.errors,[]);a.w.close();
+}
+run('s.bitcoin={seed:false,phase:false,rules:{}}');assert.throws(()=>run('exportHTML()'),/variation/);
+if(process.env.ORDINALS_LIVE_TEST){
+ const {execFile}=require('node:child_process');
+ const live=dom(output,url=>new Promise((resolve,reject)=>execFile('curl',['-fsS','--max-time','20',url],(err,stdout)=>err?reject(err):resolve({ok:true,json:async()=>JSON.parse(stdout)}))),'file:///tmp/art.html');
+ for(let i=0;i<60&&live.run('busy');i++)await new Promise(r=>setTimeout(r,500));
+ assert(live.run('currentBlock.height')>0);assert.equal(live.w.document.getElementById('connection').textContent,'');assert.deepEqual(live.errors,[]);
+ console.log('REAL ordinals.com from standalone file: block '+live.run('currentBlock.height')+', SVG paths '+live.w.document.querySelectorAll('#work path').length);live.w.close();
+}
 assert.deepEqual(studio.errors,[]);art.w.close();w.close();console.log('Five fonts, dynamic text, HTML escaping, recursive updates, reorg, failure retention, missing data, simulation guard: OK');
 })().catch(e=>{console.error(e);process.exitCode=1});

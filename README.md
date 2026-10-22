@@ -16,7 +16,7 @@ Puis ouvrir http://localhost:8080. Le studio fonctionne hors ligne pour composer
 
 Les six moteurs PLOTR sont conservés : Flow Fields, Cellular, Type Playground, Optical, Superformula, Isogrid. Le mode Affiche conserve les blocs typographiques, positions, réserve, répulsion et émission Flow. Les cinq choix typographiques restent disponibles : monoligne, Archivo Black, Bebas Neue, Roboto et Space Grotesk.
 
-Dans **Bitcoin**, cocher les paramètres variables puis fixer leurs bornes min/max. Les valeurs fixes se règlent dans **Réglages**. Les bornes sont validées contre les limites et pas natifs du moteur. Chaque moteur conserve ses propres règles. Désactiver la seed variable pour figer le hasard tout en faisant évoluer certains paramètres. Les favoris sont propres à ORDINALS Studio.
+Dans **Bitcoin**, cocher les paramètres variables puis fixer leurs bornes min/max. Les valeurs fixes se règlent dans **Réglages**. Les bornes sont validées contre les limites et pas natifs du moteur. Chaque moteur conserve ses propres règles. Désactiver la seed variable pour figer le hasard tout en faisant évoluer certains paramètres. La phase Bitcoin, activée par défaut, fait évoluer Flow, Type, Optical et Superformula : elle remplace une animation fondée sur le temps par une valeur déterminée par le bloc. Cellular et Isogrid évoluent via la seed. Un export sans aucun mécanisme de variation activé est refusé. Les favoris sont propres à ORDINALS Studio.
 
 Le bloc de démarrage est Genesis, avec ses données réelles embarquées. Charger une hauteur, naviguer avec les flèches ou demander le dernier bloc. Le suivi automatique interroge la passerelle toutes les 30 secondes. La simulation hors ligne ne présente aucune date, transaction ou frais inventés ; elle est signalée et doit être remplacée par un bloc réel/Genesis avant l’export.
 
@@ -40,12 +40,12 @@ Une donnée optionnelle absente est affichée `N/A`, jamais remplacée par zéro
 
 **Exporter HTML** télécharge une seule œuvre `.html`. Le fichier contient la configuration, les moteurs, le compositeur, les contours vectoriels des familles utilisées et leurs licences OFL. Il n’utilise aucun CDN, police distante, API tierce, fichier du studio ni ressource à héberger séparément. La taille est indiquée après téléchargement ; plusieurs polices augmentent le poids.
 
-Le fichier affiche immédiatement le bloc réel exporté puis consulte sur **la même origine** :
+Le fichier affiche immédiatement le bloc réel exporté puis consulte les endpoints récursifs :
 
-- `/r/blockhash` : identité du bloc courant ;
-- `/r/blockinfo/<hash>` : données cohérentes du même bloc.
+- `/r/blockheight` : hauteur du bloc courant ;
+- `/r/blockinfo/<hauteur>` : hash, date, transactions et frais du bloc.
 
-Il actualise le dessin toutes les 30 secondes si le hash change, y compris après une réorganisation à hauteur identique. En cas de panne, il conserve le dernier rendu et affiche un état discret. Hors d’un serveur Ordinals compatible, il conserve le bloc embarqué ; un serveur web ordinaire ne fournit pas les endpoints récursifs. Le fichier est destiné à une inscription de type `text/html;charset=utf-8` ; l’application ne réalise aucune transaction d’inscription.
+Il actualise le dessin toutes les 30 secondes si le hash change, y compris après une réorganisation à hauteur identique. En cas de panne, il conserve le dernier rendu et affiche un état discret. Sur `ordinals.com` ou une URL de contenu d’inscription, il utilise d’abord la même origine. Ouvert comme fichier local ou sur un hébergement web classique, il appelle explicitement `https://ordinals.com/r/blockheight` et `https://ordinals.com/r/blockinfo/<hauteur>`, comme Aura, Fees Territory et Acid Bitcoin. Une passerelle de contenu qui échoue est suivie d’une tentative sur `https://ordinals.com`. Il se synchronise dès l’ouverture, toutes les 30 secondes, au retour de la connexion et au retour sur l’onglet. Le studio peut être fermé : le suivi est entièrement embarqué dans l’œuvre. Le fichier est destiné à une inscription de type `text/html;charset=utf-8` ; l’application ne réalise aucune transaction d’inscription.
 
 Le hasard dépend de la seed d’artiste et du hash, avec un tirage distinct par paramètre. L’ordre des règles, l’heure locale, les confirmations et le nombre de rafraîchissements ne changent pas le dessin. Même configuration + même hash/données immuables = mêmes coordonnées vectorielles. La rastérisation peut varier légèrement selon le navigateur.
 
@@ -67,7 +67,7 @@ node tests/ordinals.cjs
 
 Après toute modification de `core.js`, `bitcoin.js`, `typography.js`, `poster.js` ou `geometry-engines.js`, régénérer `export-sources.js`. Ce paquet est utilisé pour embarquer exactement le même moteur dans l’export. `font-data.js` provient de PLOTR et conserve les contours locaux ; `scripts/build-font-outlines.py` permet leur régénération depuis les TTF et licences conservés dans `dist/fonts`.
 
-Les tests géométriques couvrent les six moteurs, marges, déterminisme, effets Affiche, cubes multi-échelles et formats. Les tests navigateur comparent les tracés de l’export et de l’aperçu, les substitutions de texte, les bornes, les changements de bloc, les réorganisations et les erreurs réseau. Les réponses réseau y sont simulées : une inscription réelle doit être prévisualisée sur le serveur ord cible avant envoi.
+Les tests géométriques couvrent les six moteurs, marges, déterminisme, effets Affiche, cubes multi-échelles et formats. Les tests navigateur comparent les tracés de l’export et de l’aperçu, les substitutions de texte, les bornes, les changements de bloc, les réorganisations et les erreurs réseau. Les tests simulent les nouveaux blocs, les réorganisations, les erreurs et les contextes fichier local / site classique / serveur Ordinals. `ORDINALS_LIVE_TEST=1 node tests/runtime.cjs` ajoute une vérification avec les réponses réelles d’ordinals.com via curl. Une inscription réelle doit aussi être prévisualisée sur le serveur ord cible avant envoi.
 
 Références créatives conservées de PLOTR : [SuperformulaSVG de Jason Webb](https://github.com/jasonwebb/SuperformulaSVG) et [isogrid de Frederik Vanhoutte / wblut](https://github.com/wblut/isogrid). Les moteurs sont des implémentations JavaScript originales de PLOTR, pas des copies de ces bibliothèques Processing. Les polices restent distribuées avec leurs notices SIL OFL.
 
