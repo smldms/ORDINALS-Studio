@@ -22,17 +22,28 @@ Le bloc de démarrage est Genesis, avec ses données réelles embarquées. Charg
 
 Les champs Affiche et Type acceptent :
 
+Des boutons **Bloc / Date / Frais / TX** et un sélecteur complet sont disponibles sous les textes Affiche et Type. L’insertion remplace la sélection ou se fait au curseur ; le texte libre reste modifiable.
+
 | Variable | Valeur |
 | --- | --- |
-| `{height}` | Hauteur du bloc |
-| `{hash}` | Hash du bloc |
-| `{date}` | Date ISO UTC |
-| `{time}` | Heure UTC |
-| `{transactions}` | Nombre de transactions |
-| `{total_fee}` | Frais totaux en satoshis |
-| `{average_fee}` | Frais moyens en satoshis |
-| `{median_fee}` | Frais médians en satoshis |
-| `{fee_rate}` | Taux moyen en sat/vB |
+| `{height}`, `{date}`, `{time}` | Hauteur, date et heure UTC |
+| `{fees}` ou `{total_fee}` | Frais totaux en satoshis |
+| `{fees_btc}` | Frais totaux en BTC (8 décimales) |
+| `{average_fee}`, `{median_fee}` | Frais moyens et médians en satoshis |
+| `{min_fee}`, `{max_fee}` | Frais minimum et maximum en satoshis |
+| `{fee_rate}` ou `{average_fee_rate}` | Taux moyen en sat/vB |
+| `{min_fee_rate}`, `{max_fee_rate}` | Taux minimum et maximum en sat/vB |
+| `{transactions}` ou `{transaction_count}` | Nombre de transactions |
+| `{size}` ou `{total_size}` | Taille du bloc en octets |
+| `{weight}` ou `{total_weight}` | Poids du bloc en unités de poids (WU) |
+| `{max_tx_size}` | Taille de la plus grande transaction en octets |
+| `{subsidy}`, `{subsidy_btc}` | Subvention du bloc, hors frais, en satoshis ou BTC |
+| `{difficulty}`, `{nonce}`, `{version}`, `{bits}` | Données de minage et d’en-tête |
+| `{timestamp}`, `{median_time}` | Timestamp et temps médian Unix |
+| `{hash}`, `{hash_short}` | Hash complet ou ses 12 derniers caractères |
+| `{previous_block}`, `{merkle_root}` | Hash précédent et racine de Merkle |
+
+Les confirmations et le bloc suivant sont volontairement exclus : ces valeurs changent avec le temps pour un même bloc, ce qui casserait la reproductibilité.
 
 Une donnée optionnelle absente est affichée `N/A`, jamais remplacée par zéro. Les longs textes (notamment le hash) peuvent être coupés aux marges : adapter le corps et la largeur comme dans PLOTR.
 

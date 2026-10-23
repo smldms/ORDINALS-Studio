@@ -12,6 +12,23 @@ for(const engine of ['flow','cell','type','op','super','iso']){
  const output=run('exportHTML()');assert(!/<script[^>]+src=|<link[^>]+href=/.test(output));const art=dom(output);assert.deepEqual(art.errors,[]);assert.equal(art.run('artworkSVG()'),run('artworkSVG()'));
  assert.equal(art.run('JSON.stringify(s)'),run('JSON.stringify(s)'));art.w.close();console.log(engine+': controls, deterministic vectors, all parameter bounds, identical autonomous export OK');
 }
+
+// Insert at the selection and persist through the existing textarea input handler.
+for(const [engine,target] of [['flow','blockText'],['type','words']]){
+ w.document.querySelector('[data-engine="'+engine+'"]').click();const field=w.document.getElementById(target);
+ field.value='BLOCK X';field.dispatchEvent(new w.Event('input',{bubbles:true}));field.setSelectionRange(6,7);
+ w.document.querySelector('[data-token-target="'+target+'"][data-token="fees"]').click();
+ assert.equal(field.value,'BLOCK {fees}');assert.equal(run(target==='words'?'s.params.text':'s.poster.blocks[activeBlock].text'),field.value);
+ w.document.getElementById(target+'Token').value='difficulty';field.setSelectionRange(field.value.length,field.value.length);
+ w.document.querySelector('[data-token-target="'+target+'"]:not([data-token])').click();assert.equal(field.value,'BLOCK {fees}{difficulty}');
+}
+const sample={height:1,hash:'a'.repeat(64),timestamp:1231469665,total_fee:123456789,average_fee:123,median_fee:100,min_fee:0,max_fee:999,average_fee_rate:2,min_fee_rate:1,max_fee_rate:10,transaction_count:1234,total_size:10000,total_weight:40000,max_tx_size:1000,subsidy:312500000,difficulty:123.5,nonce:12345,version:1,bits:123,median_time:1231469600,merkle_root:'b'.repeat(64),previous_block:'c'.repeat(64)};
+run('currentBlock=validateBlock('+JSON.stringify(sample)+')');
+assert.equal(run("resolveText('{fees} {total_fee} {fees_btc} {subsidy_btc} {size} {weight} {nonce} {min_fee}',currentBlock)"),'123456789 123456789 1.23456789 3.12500000 10000 40000 12345 0');
+assert(run("BITCOIN_TEXT_FIELDS.every(([key])=>!resolveText('{'+key+'}',currentBlock).includes('N/A'))"));
+assert.equal(run("resolveText('{difficulty} {nonce} {fees_btc}',GENESIS)"),'N/A N/A 0.00000000');
+run("s.engine='type';s.params={...defaults.type,text:BITCOIN_TEXT_FIELDS.map(([key])=>'{'+key+'}').join(' / '),density:1};s.poster.enabled=false");
+const fieldArt=dom(run('exportHTML()'));assert.equal(fieldArt.run('artworkSVG()'),run('artworkSVG()'));assert.deepEqual(fieldArt.errors,[]);fieldArt.w.close();run('currentBlock={...GENESIS}');
 w.document.querySelector('[data-engine="flow"]').click();w.document.querySelector('[data-tab="bitcoin"]').click();w.document.querySelector('#bitcoinPoster').click();
 for(const family of ['mono','archivo','bebas','roboto','grotesk']){run(`s.poster.blocks[0].font='${family}';s.poster.blocks[0].text='BLOCK {height} / {transactions} / {total_fee}';`);const a=dom(run('exportHTML()'));assert.deepEqual(a.errors,[]);assert.equal(a.run('artworkSVG()'),run('artworkSVG()'));a.w.close()}
 run(`s.poster.blocks[0].text='</script><img src=x> {height}';`);const output=run('exportHTML()');const requests=[];let block={height:1,hash:'a'.repeat(64),timestamp:1231469665,transaction_count:1,total_fee:0};let offline=false;

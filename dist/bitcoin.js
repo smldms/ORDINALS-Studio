@@ -5,7 +5,25 @@ function hash32(value){let h=2166136261;for(const c of String(value)){h^=c.charC
 function blockSettings(state){state.bitcoin??={};state.bitcoin.seed??=true;state.bitcoin.phase??=true;state.bitcoin.rules??={};return state.bitcoin}
 function blockPhase(state,block){return blockSettings(state).phase?((block.height*.618033988749895+hash32(block.hash||'simulation')/4294967296)%1)*Math.PI*2:0}
 function hasBlockEvolution(state){const b=blockSettings(state);return (b.seed&&['flow','cell','type','iso'].includes(state.engine))||(b.phase&&['flow','type','op','super'].includes(state.engine))||Object.values(b.rules[state.engine]||{}).some(r=>r.enabled&&Number(r.max)>Number(r.min))}
-function resolveText(text,block){const fields={height:block.height,hash:block.hash,date:block.timestamp==null?'N/A':new Date(block.timestamp*1000).toISOString().slice(0,10),time:block.timestamp==null?'N/A':new Date(block.timestamp*1000).toISOString().slice(11,19)+' UTC',transactions:block.transaction_count,total_fee:block.total_fee,average_fee:block.average_fee,median_fee:block.median_fee,fee_rate:block.average_fee_rate};return String(text).replace(/\{([a-z_]+)\}/g,(all,k)=>Object.hasOwn(fields,k)?String(fields[k]??'N/A'):all)}
+// Only immutable block properties: confirmations/next_block would break replay determinism.
+const BLOCK_NUMERIC_FIELDS=['transaction_count','total_fee','average_fee','median_fee','average_fee_rate','min_fee','max_fee','min_fee_rate','max_fee_rate','subsidy','difficulty','nonce','total_size','total_weight','max_tx_size','version','bits','median_time'];
+const BITCOIN_TEXT_FIELDS=[
+ ['height','Bloc'],['date','Date UTC'],['time','Heure UTC'],['fees','Frais totaux · sat'],['fees_btc','Frais totaux · BTC'],
+ ['average_fee','Frais moyens · sat'],['median_fee','Frais médians · sat'],['min_fee','Frais minimum · sat'],['max_fee','Frais maximum · sat'],
+ ['fee_rate','Taux moyen · sat/vB'],['min_fee_rate','Taux minimum · sat/vB'],['max_fee_rate','Taux maximum · sat/vB'],
+ ['transactions','Transactions'],['size','Taille · octets'],['weight','Poids · WU'],['max_tx_size','Plus grande transaction · octets'],
+ ['subsidy','Subvention · sat'],['subsidy_btc','Subvention · BTC'],['difficulty','Difficulté'],['nonce','Nonce'],['version','Version'],['bits','Bits'],
+ ['timestamp','Timestamp Unix'],['median_time','Temps médian Unix'],['hash','Hash complet'],['hash_short','Hash court · 12 derniers caractères'],
+ ['previous_block','Hash précédent'],['merkle_root','Racine de Merkle']
+];
+function resolveText(text,block){
+ const fields=Object.fromEntries(BLOCK_NUMERIC_FIELDS.map(key=>[key,block[key]]));
+ const btc=value=>value==null?null:(value/100000000).toFixed(8);
+ Object.assign(fields,{height:block.height,hash:block.hash,hash_short:block.hash?.slice(-12),previous_block:block.previous_block,merkle_root:block.merkle_root,timestamp:block.timestamp,
+ date:block.timestamp==null?'N/A':new Date(block.timestamp*1000).toISOString().slice(0,10),time:block.timestamp==null?'N/A':new Date(block.timestamp*1000).toISOString().slice(11,19)+' UTC',
+ transactions:block.transaction_count,fees:block.total_fee,fees_btc:btc(block.total_fee),subsidy_btc:btc(block.subsidy),fee_rate:block.average_fee_rate,size:block.total_size,weight:block.total_weight});
+ return String(text).replace(/\{([a-z_]+)\}/g,(all,k)=>Object.hasOwn(fields,k)?String(fields[k]??'N/A'):all);
+}
 function ruleSpecs(state){return [...specs[state.engine],...(state.engine==='type'?[['density','Nombre de lignes',1,120,1],['repeatSize','Corps répété',1,80,.25],['size','Corps composé',1,80,.25],['tracking','Approche',0,10,.1],['leading','Interlignage',.6,3,.05],['width','Largeur des lettres',35,160,1],['y','Position Y',0,90,1],['slant','Inclinaison',-30,30,1]]:[])]}
 function effectiveState(base,block){const state=structuredClone(base),settings=blockSettings(state),identity=block.hash||'simulation:'+block.height;
  if(settings.seed)state.seed=hash32(base.seed+'|'+identity);
@@ -20,7 +38,7 @@ function effectiveState(base,block){const state=structuredClone(base),settings=b
  return state;
 }
 function generate(){normalizeState();const base=s,oldPhase=phase;try{s=effectiveState(base,currentBlock);phase=blockPhase(base,currentBlock);return generateBase()}finally{s=base;phase=oldPhase}}
-function validateBlock(data){if(!data||!Number.isSafeInteger(data.height)||data.height<0||!/^[0-9a-f]{64}$/.test(data.hash)||!Number.isFinite(data.timestamp)||data.timestamp<0||data.timestamp>8640000000000)throw Error('Réponse de bloc invalide');const result={height:data.height,hash:data.hash,timestamp:data.timestamp};for(const k of ['transaction_count','total_fee','average_fee','median_fee','average_fee_rate'])result[k]=typeof data[k]==='number'&&Number.isFinite(data[k])&&data[k]>=0?data[k]:null;return result}
+function validateBlock(data){if(!data||!Number.isSafeInteger(data.height)||data.height<0||!/^[0-9a-f]{64}$/.test(data.hash)||!Number.isFinite(data.timestamp)||data.timestamp<0||data.timestamp>8640000000000)throw Error('Réponse de bloc invalide');const result={height:data.height,hash:data.hash,timestamp:data.timestamp};for(const k of BLOCK_NUMERIC_FIELDS)result[k]=typeof data[k]==='number'&&Number.isFinite(data[k])&&data[k]>=0?data[k]:null;for(const k of ['previous_block','merkle_root'])result[k]=typeof data[k]==='string'&&/^[0-9a-f]{64}$/.test(data[k])?data[k]:null;return result}
 // Aura uses same-origin on Ordinals and an explicit Ordinals origin elsewhere.
 function getOrdinalsOrigin(loc=globalThis.location){
  const isHTTP=loc&&['http:','https:'].includes(loc.protocol);
