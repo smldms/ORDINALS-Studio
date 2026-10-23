@@ -13,6 +13,27 @@ for(const engine of ['flow','cell','type','op','super','iso']){
  assert.equal(art.run('JSON.stringify(s)'),run('JSON.stringify(s)'));art.w.close();console.log(engine+': controls, deterministic vectors, all parameter bounds, identical autonomous export OK');
 }
 
+// Full compositions keep deterministic shared rendering, color and undo semantics.
+const seenEngines=new Set(),seenPalettes=new Set(),seenFormats=new Set();
+for(let seed=1;seed<=24;seed++){
+ run(`s=makeComposition(${seed});controls();render()`);
+ seenEngines.add(run('s.engine'));seenPalettes.add(run('s.appearance.key'));seenFormats.add(run('s.format'));
+ assert.equal(run(`JSON.stringify(makeComposition(${seed}))`),run(`JSON.stringify(makeComposition(${seed}))`));
+ const svg=run('artworkSVG()');assert(!/undefined|NaN|Infinity/.test(svg));assert(run('paths.length>0'));
+ assert(run('Object.values(s.bitcoin.rules[s.engine]).every(rule=>rule.min<=rule.max)'));
+ if(seed<=8){const a=dom(run('exportHTML()'));assert.deepEqual(a.errors,[]);assert.equal(a.run('artworkSVG()'),svg);assert.equal(a.run('paperColor()'),run('paperColor()'));a.w.close()}
+}
+assert.equal(seenEngines.size,6);assert(seenPalettes.size>=6);assert(seenFormats.size>=4);
+for(const key of run('Object.keys(artDirections)'))for(const mode of ['mono','accent','zones']){
+ run(`applyArtDirection('${key}');s.appearance.mode='${mode}';render()`);
+ assert(!/undefined|NaN/.test(run('artworkSVG()')));
+}
+const prior=run('JSON.stringify(s)'),priorSVG=run('artworkSVG()');
+w.document.getElementById('randomAll').click();assert.notEqual(run('JSON.stringify(s)'),prior);
+w.document.getElementById('undoComposition').click();assert.equal(run('JSON.stringify(s)'),prior);assert.equal(run('artworkSVG()'),priorSVG);
+run('locked=true');const lockedSeed=run('s.seed');w.document.getElementById('randomAll').click();assert.equal(run('s.seed'),lockedSeed);run('locked=false');
+console.log('24 full compositions, 8 palettes, 3 color modes, autonomous colors, undo and locked seed OK');
+
 // Insert at the selection and persist through the existing textarea input handler.
 for(const [engine,target] of [['flow','blockText'],['type','words']]){
  w.document.querySelector('[data-engine="'+engine+'"]').click();const field=w.document.getElementById(target);

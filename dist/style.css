@@ -7,3 +7,7 @@ textarea{font:12px/1.7 'DM Sans',sans-serif;resize:vertical;min-height:92px;widt
 .tabs{flex-wrap:wrap}.tabs button{flex:1;min-width:65px}.block-rule{padding:12px 0;border-bottom:1px solid var(--line)}.block-rule label{margin-bottom:8px}.block-rule input[type=number]{width:100%}#bitcoinControls input[type=url],#blockHeight{width:100%;padding:8px;background:#171819;color:var(--text);border:1px solid var(--line);border-radius:5px}#bitcoinControls code{line-height:1.8;color:var(--accent)}
 
 .bitcoin-text-insert{padding:12px;margin:-6px 0 22px;border:1px solid var(--line);border-radius:7px}.token-shortcuts{display:flex;gap:6px;margin:12px 0}.token-shortcuts button{flex:1;padding:7px 5px;font-size:11px}.bitcoin-text-insert label{margin-bottom:10px}.bitcoin-text-insert .tip{margin-bottom:0}
+/* Color direction and full-composition exploration */
+.color-fields{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.color-fields label{margin:8px 0}.color-fields input[type=color]{display:block;width:100%;height:38px;padding:3px;border:1px solid var(--line,#c9c9bd);background:transparent;cursor:pointer}
+#randomAll{background:#222c28;color:#f4f0e6;border-color:#222c28}#undoComposition:disabled{opacity:.35;cursor:default}.dock{flex-wrap:wrap;justify-content:center;max-width:100%}.dock button{white-space:nowrap}
+@media(max-width:850px){.dock{gap:5px}.dock button{padding:9px 10px}.dock .divider{display:none}.dock kbd{display:none}}

@@ -61,4 +61,4 @@ async function readLiveBlock(){
  const base=getOrdinalsOrigin();
  try{return await readBlock(base,'latest')}catch(error){if(base==='')return readBlock('https://ordinals.com','latest');throw error}
 }
-function artworkSVG(){generate();const cols=drawingPalette();return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${dims.join(' ')}" role="img" aria-label="Bitcoin generative artwork">${paths.map(p=>`<path d="${dOf(p.points)}" fill="none" stroke="${cols[p.layer]}" stroke-width="${p.weight??s.weight}" stroke-linecap="round" stroke-linejoin="round"/>`).join('')}</svg>`}
+function artworkSVG(){generate();const cols=drawingPalette();return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${dims.join(' ')}" role="img" aria-label="Bitcoin generative artwork">${paths.map((p,i)=>`<path d="${dOf(p.points)}" fill="none" stroke="${pathColor(p,i,cols)}" stroke-width="${p.weight??s.weight}" stroke-linecap="round" stroke-linejoin="round"/>`).join('')}</svg>`}

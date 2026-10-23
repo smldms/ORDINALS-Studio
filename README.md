@@ -83,3 +83,11 @@ Les tests géométriques couvrent les six moteurs, marges, déterminisme, effets
 Références créatives conservées de PLOTR : [SuperformulaSVG de Jason Webb](https://github.com/jasonwebb/SuperformulaSVG) et [isogrid de Frederik Vanhoutte / wblut](https://github.com/wblut/isogrid). Les moteurs sont des implémentations JavaScript originales de PLOTR, pas des copies de ces bibliothèques Processing. Les polices restent distribuées avec leurs notices SIL OFL.
 
 Pour les tests d’intégration sans navigateur graphique : `npm install`, puis `npm test`. `tests/runtime.cjs` exécute l’interface et les HTML autonomes dans jsdom, y compris les réponses réseau simulées. Pour le contrôle Chromium : `npx playwright install chromium`, puis `npm run test:browser`.
+
+### Couleur et composition globale
+
+Dans **Tracé**, huit atmosphères associent un fond, une encre et un accent : Cobalt, Acid, Argile, Glacier, Prune, Pin, Ultraviolet et Carbone. Trois répartitions sont disponibles : monochrome, accents parcimonieux et zones diagonales. Les trois couleurs sont modifiables. Choisir une atmosphère harmonise aussi les textes de l’affiche ; leurs couleurs restent ajustables individuellement.
+
+**Tout réinventer** renouvelle le moteur, ses paramètres, le format, les marges, le poids du trait, les couleurs, la typographie, la mise en page et les variations Bitcoin bornées. Le hasard est cadré pour éviter les réglages extrêmes. La seed verrouillée reste respectée. **Annuler** remonte les 12 dernières compositions de la session ; **Varier le moteur** conserve son comportement ciblé. Enregistrez les résultats à garder dans les favoris.
+
+Couleurs et règles sont embarquées dans le HTML autonome. Le bloc fait évoluer la composition retenue ; il ne déclenche pas le bouton de composition globale. Une configuration et un bloc identiques conservent un rendu identique.

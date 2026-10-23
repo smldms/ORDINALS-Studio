@@ -6,7 +6,28 @@ const specs={flow:[['density','Nombre de lignes',40,360,1],['frequency','Fréque
 const names={flow:'FLOW FIELD',cell:'CELLULAR',type:'TYPE PLAYGROUND',op:'OPTICAL',super:'SUPERFORMULA',iso:'ISOGRID'},titles={flow:'Les chemins du hasard.',cell:'L’ordre se fragmente.',type:'Les mots font des vagues.',op:'Ne croyez pas vos yeux.',super:'La forme suit la formule.',iso:'Des mondes à main levée.'};
 function random(seed){return()=>{let t=seed+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296}}
 function noiseFactory(seed){const r=random(seed),p=Array.from({length:256},(_,i)=>i);for(let i=255;i>0;i--){let j=Math.floor(r()*(i+1));[p[i],p[j]]=[p[j],p[i]]}const perm=[...p,...p],fade=t=>t*t*t*(t*(t*6-15)+10),mix=(a,b,t)=>a+(b-a)*t,grad=(h,x,y)=>[x+y,-x+y,x-y,-x-y,x,-x,y,-y][h&7];return(x,y)=>{let X=Math.floor(x)&255,Y=Math.floor(y)&255;x-=Math.floor(x);y-=Math.floor(y);let u=fade(x),v=fade(y);return mix(mix(grad(perm[perm[X]+Y],x,y),grad(perm[perm[X+1]+Y],x-1,y),u),mix(grad(perm[perm[X]+Y+1],x,y-1),grad(perm[perm[X+1]+Y+1],x-1,y-1),u),v)}}
-function palette(){return {mono:[s.paper==='black'?'#e5dfcd':'#333a36'],ember:['#343b36','#b85431'],blue:['#203c73','#6493ae'],festival:['#cc5634','#3f6282','#a49554']}[s.palette]}
+// Curated backgrounds and inks travel with the artwork, including legacy favorites.
+const artDirections={
+ cobalt:{name:'Cobalt / Ivoire',background:'#f4f0e6',ink:'#183bba',accent:'#e74c29'},
+ acid:{name:'Acid / Obsidienne',background:'#141817',ink:'#dddccf',accent:'#d6f451'},
+ clay:{name:'Vermillon / Argile',background:'#ead9c6',ink:'#a82f21',accent:'#4c3938'},
+ glacier:{name:'Glacier / Minuit',background:'#101c2a',ink:'#9bcbd6',accent:'#f0dbaf'},
+ plum:{name:'Prune / Poudre',background:'#eee4e7',ink:'#572d50',accent:'#b34e35'},
+ forest:{name:'Pin / Lin',background:'#eeeade',ink:'#234c40',accent:'#af572b'},
+ ultraviolet:{name:'Ultraviolet / Encre',background:'#181426',ink:'#c0a2ef',accent:'#f2c57c'},
+ gallery:{name:'Carbone / Craie',background:'#f2f0e9',ink:'#272c2b',accent:'#aa4130'}
+};
+function paperColor(){return s.appearance?.background||{white:'#f2f0e9',kraft:'#c4a579',black:'#191e21'}[s.paper]||'#f2f0e9'}
+function palette(){if(s.appearance)return [s.appearance.ink,s.appearance.accent];return {mono:[s.paper==='black'?'#e5dfcd':'#333a36'],ember:['#343b36','#b85431'],blue:['#203c73','#6493ae'],festival:['#cc5634','#3f6282','#a49554']}[s.palette]||['#333a36']}
+function pathColor(p,index,cols=drawingPalette()){
+ if(!s.appearance||p.layer>=palette().length)return cols[p.layer];
+ const a=s.appearance;
+ if(a.mode==='mono')return a.ink;
+ if(a.mode==='zones'){const pt=p.points[Math.floor(p.points.length/2)];return pt[0]/dims[0]+pt[1]/dims[1]>.98?a.accent:a.ink}
+ // Sparse, stable accents rather than alternating every line.
+ return Math.floor(index/7)%5===0?a.accent:a.ink;
+}
+
 function clipSegment(a,b,box){let t0=0,t1=1,dx=b[0]-a[0],dy=b[1]-a[1];for(const[p,q]of[[-dx,a[0]-box[0]],[dx,box[2]-a[0]],[-dy,a[1]-box[1]],[dy,box[3]-a[1]]]){if(p===0){if(q<0)return null}else{let t=q/p;if(p<0)t0=Math.max(t0,t);else t1=Math.min(t1,t);if(t0>t1)return null}}return[[a[0]+dx*t0,a[1]+dy*t0],[a[0]+dx*t1,a[1]+dy*t1]]}
 function add(points,layer=0){let part=[],box=[s.margin,s.margin,dims[0]-s.margin,dims[1]-s.margin];const flush=()=>{if(part.length>1)paths.push({points:part,layer});part=[]};for(let i=1;i<points.length;i++){const seg=clipSegment(points[i-1],points[i],box);if(!seg){flush();continue}if(part.length&&Math.hypot(part.at(-1)[0]-seg[0][0],part.at(-1)[1]-seg[0][1])>.001)flush();if(!part.length)part.push(seg[0]);part.push(seg[1])}flush()}
 function generateBase(){normalizeState();typeLimited=false;paths=[];dims=pageDimensions();preparePoster();const [w,h]=dims,m=s.margin,p=s.params,r=random(s.seed),n=noiseFactory(s.seed),colors=palette().length;
